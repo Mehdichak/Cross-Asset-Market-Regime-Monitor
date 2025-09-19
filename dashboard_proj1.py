@@ -149,3 +149,15 @@ multi_cum.to_csv("aligned_cumrets.csv")
 
 print("Saved aligned prices and cumulative returns.")
 
+#~ second session 
+# adding ten years tresuries for bonds (^tnx)
+# adding ticker for commodities (gold) (GD=f), ticker for the wheat (zw=f) 
+
+
+#crude oil (how to )
+wti=yf.download("WTI") ['Close']
+wti=(pd.read_csv("wti_data.csv"),index_col=0,parse_dates=True)['wti'].pct_change()+1.cumprod()
+
+
+
+
