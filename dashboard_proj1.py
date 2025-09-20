@@ -37,7 +37,7 @@ print (" Index types :", type (spy. index ), type ( spy_from_file . index ))
 missing_counts = spy.isna().sum()
 print (" Missing counts :\n", missing_counts )
 # this part is very is we need to, verify missisng values, if we have some we can try to fill with fillna() or interpolation
-
+#data =.ffill() (last observation carried forward)
 
 # 4. Quick plot (SPY only )
 spy.plot(y="SPY_Close", title="SPY Close (full history)")
@@ -149,15 +149,32 @@ multi_cum.to_csv("aligned_cumrets.csv")
 
 print("Saved aligned prices and cumulative returns.")
 
-#~ second session 
-# adding ten years tresuries for bonds (^tnx)
-# adding ticker for commodities (gold) (GD=f), ticker for the wheat (zw=f) 
+#   second session 
+# git diff show us what we added last time and what we removed 
 
+def download_data(ticker: str, filename: str):
+    
+    """
+    Downloads price data for a given ticker from Yahoo Finance,
+    keeps only the closing prices, and saves to CSV.
+    Parameters:
+    ticker (str): Yahoo Finance ticker symbol
+    filename (str): CSV file to store data
+    """
+    data = yf.download(ticker)['Close']
+    data.to_csv(filename)
 
-#crude oil (how to )
-wti=yf.download("WTI") ['Close']
-wti=(pd.read_csv("wti_data.csv"),index_col=0,parse_dates=True)['wti'].pct_change()+1.cumprod()
+# Dictionary of tickers and output file names
+tickers = {
+    "SPY": "equities.csv",        # S&P 500 ETF
+    "TLT": "bonds.csv",           # Long-term Treasury bonds ETF
+    "GC=F": "gold.csv",           # Gold futures
+    "CL=F": "crude_oil.csv",      # Crude oil futures
+    "ZW=F": "wheat.csv",          # Wheat futures
+    "DX-Y.NYB": "usd_index.csv"   # Dollar Index (NYBOT)
+}
 
-
-
+# Loop over the dictionary and download each ticker
+for ticker, filename in tickers.items():
+    download_data(ticker, filename)
 
