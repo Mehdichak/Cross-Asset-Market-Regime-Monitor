@@ -14,21 +14,47 @@ import matplotlib.pyplot as plt
 # data.to_csv("spy_data.csv")
 #print (data.index)
 
-spy = (pd.read_csv("spy_data.csv", index_col=0, parse_dates=True)['SPY'].pct_change() +1).cumprod()
+#Data download 
+def data_download(ticker,filename):
+    data = yf.download(ticker)['Close']
+    data.to_csv(filename)
 
-# Check for missing values 
+ticker_filename={
+    "SPY":"spy.csv",
+    "DX-Y.NYB": "usd.csv",
+    "GC=F":"gold.csv",
+    "WTI":"wti.csv",
+    "^TNX": "bonds.csv"
+}
 
-# missing_values = data.isnull().sum #number is zero 
-# Plot the data 
-spy.plot(label='SPY')
-plt .ylabel ("SPY closing price")
-plt.title("SPY Closing price over time")
-plt.yscale('log')
+for ticker,filename in ticker_filename.items():
+    data_download(ticker,filename)
+
+# Sanity Checks 
+
+# Check for missisng values 
+def check_na(data):
+    null_sum = data.isna().sum()
+    null_percentage = null_sum/len(data)
+    print(f"ratio of missing values : {null_percentage}")
 
 
-#forex using USD index 
 
-usd= (yf.download("DX-Y.NYB", start=spy.index.min())['Close'].pct_change() +1).cumprod
-usd['DX-Y.NYB'].plot(label='USD INDEX')
-plt.legend()
-plt.show() 
+spy = pd.read_csv("spy.csv", index_col=0, parse_dates=True)# ['SPY'].pct_change() +1).cumprod()
+check_na(spy)
+# # Check for missing values 
+
+# # missing_values = data.isnull().sum #number is zero 
+# # Plot the data 
+# spy.plot(label='SPY')
+# plt .ylabel ("SPY closing price")
+# plt.title("SPY Closing price over time")
+# plt.yscale('log')
+
+
+# #forex using USD index 
+
+# usd= (yf.download("DX-Y.NYB", start=spy.index.min())['Close'].pct_change() +1).cumprod
+# usd['DX-Y.NYB'].plot(label='USD INDEX')
+# plt.legend()
+# plt.show() 
