@@ -27,6 +27,12 @@ ticker_filename={
     "^TNX": "bonds.csv"
 }
 
+# create a mapping to avoid special caraters in ticker 
+sanitized_ticker = {ticker:filename.replace('.csv','') for ticker,filename in ticker_filename.items()}
+
+
+
+
 for ticker,filename in ticker_filename.items():
     data_download(ticker,filename)
 
@@ -39,9 +45,44 @@ def check_na(data):
     print(f"ratio of missing values : {null_percentage}")
 
 
+def  fill_missing_values(df): 
+    '''
+    Fill missing values using ffill method, 
+    input is the data frame 
+    output the dataframe 
+    '''
+    df= df.fill().dropna()
+    return df
+
+
+
+def plot_df(ticker):
+
+    data = pd.read_csv(ticker_filename[ticker])
+    plt.title(sanitized_ticker[ticker])
+    plt.plot(data.index,data[ticker])
+    plt.savefig(sanitized_ticker[ticker]+ '.png')
+
+# create a loop that does everything for each ticker 
+
+
+
+
+
+
+
+
+
 
 spy = pd.read_csv("spy.csv", index_col=0, parse_dates=True)# ['SPY'].pct_change() +1).cumprod()
 check_na(spy)
+fill_missing_values(spy)
+plot_df(spy)
+
+
+
+
+
 # # Check for missing values 
 
 # # missing_values = data.isnull().sum #number is zero 
@@ -58,3 +99,11 @@ check_na(spy)
 # usd['DX-Y.NYB'].plot(label='USD INDEX')
 # plt.legend()
 # plt.show() 
+
+
+# -------future work ---------
+# write a function to deal with missing values 
+#scale the data
+#write small functions for each of the data preprocessing steps and then one main function to call them all 
+# create a function that does plotting in a systematic way
+# inchallah use streamlit 
