@@ -27,7 +27,7 @@ ticker_filename={
     "^TNX": "bonds.csv"
 }
 
-# create a mapping to avoid special caraters in ticker 
+# create a mapping to avoid special caracters in ticker 
 sanitized_ticker = {ticker:filename.replace('.csv','') for ticker,filename in ticker_filename.items()}
 
 
@@ -38,32 +38,40 @@ for ticker,filename in ticker_filename.items():
 
 # Sanity Checks 
 
-# Check for missisng values 
+#  fct Check for missisng values 
 def check_na(data):
     null_sum = data.isna().sum()
     null_percentage = null_sum/len(data)
-    print(f"ratio of missing values : {null_percentage}")
+    print("ratio of missing values : {null_percentage}")
 
-
+# fct to fill missing values 
 def  fill_missing_values(df): 
     '''
     Fill missing values using ffill method, 
     input is the data frame 
     output the dataframe 
     '''
-    df= df.fill().dropna()
+    df= df.ffill().dropna()
     return df
 
 
-
+# fct to plot & save the figures png 
 def plot_df(ticker):
 
     data = pd.read_csv(ticker_filename[ticker])
+    plt.figure()
     plt.title(sanitized_ticker[ticker])
     plt.plot(data.index,data[ticker])
     plt.savefig(sanitized_ticker[ticker]+ '.png')
 
 # create a loop that does everything for each ticker 
+for ticker in ticker_filename.keys() : 
+    print (f"checking {ticker}")
+    data = pd.read_csv(ticker_filename[ticker],index_col=0,parse_dates= True)
+    check_na(data)
+    print("")
+    data=fill_missing_values(data)
+    plot_df(ticker)
 
 
 
@@ -74,6 +82,7 @@ def plot_df(ticker):
 
 
 
+# checking with only spy (to verify the process & have clear idea)
 spy = pd.read_csv("spy.csv", index_col=0, parse_dates=True)# ['SPY'].pct_change() +1).cumprod()
 check_na(spy)
 fill_missing_values(spy)
