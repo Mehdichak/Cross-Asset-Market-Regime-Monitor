@@ -188,4 +188,7 @@ plot_series(
 
 
 print("Pipeline finished. Data and plots saved in the current folder.")
- 
+#print(all_assets_cumulative)
+all_assets_cumulative.to_csv("all_data.csv")
+data = pd.read_csv("alL_data.csv",index_col=0,parse_dates=True)
+print(data)
