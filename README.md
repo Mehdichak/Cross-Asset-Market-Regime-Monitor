@@ -1,6 +1,4 @@
-**# Cross-Asset-Market-Regime-Monitor
-MSc in Financial Markets and Investments Python Programming for Finance
-**🌍 Cross-Asset Market Regime Dashboard
+🌍 Cross-Asset Market Regime Dashboard
 🔎 Introduction
 
 This repository contains the foundations of a cross-asset monitoring tool developed in the context of the Python Programming for Finance course (MSc Financial Markets & Investments, Skema Business School).
