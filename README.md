@@ -1,20 +1,52 @@
-# Cross-Asset-Market-Regime-Monitor
-\MSc in Financial Markets and Investments Python Programming for Finance  
+# 🌍 Cross-Asset Market Regime Dashboard
 
-Overview First sessions :   
+A work-in-progress project to monitor **cross-asset market regimes** by combining macroeconomic indicators and financial asset data.  
+Developed as part of the *Python Programming for Finance* course (MSc Financial Markets & Investments, Skema Business School).
 
-In this session, we built a prototype of a market dashboard using Python. The objective was to fetch market data (equities, FX, indices), validate it, transform it into returns, and plot aligned series.  
+---
 
-Throughout, we emphasized:  
+## 📌 Overview
+This repository provides a Python pipeline and Streamlit dashboard for analyzing:
+- **Macroeconomic indicators** (e.g., CPI, GDP from FRED)  
+- **Financial assets** (Equities, Bonds, Commodities, Dollar Index from Yahoo Finance)  
 
-• fetching data robustly with yfinance,  
+The workflow covers **data collection**, **preprocessing**, **return computations**, and **basic visualizations**.  
+Future development will expand the interactive Streamlit dashboard with **filters, yield curves, and term structures**.
 
-• saving intermediate results to CSV,  
+---
 
-• validating data types and missing values,  
+## 🎯 Features
+### ✅ Implemented
+- Download and save macroeconomic + financial data to CSV  
+- Handle missing values with forward fill  
+- Compute arithmetic and cumulative compounded returns  
+- Generate plots for cumulative growth  
 
-• aligning multiple series by their common start,  
+### 🚧 Planned
+- Term structures for futures  
+- Yield curves for bonds (US, Germany)  
+- Heatmaps and cross-asset comparisons  
+- Streamlit filters for time periods, regimes, and asset classes  
+- Automated daily updates  
 
-• computing cumulative returns for comparability,  
+---
 
-• producing quick visualizations with matplotlib.
+## ⚙️ Installation
+
+Clone the repository:
+```bash
+git clone https://github.com/your-username/cross-asset-dashboard.git
+cd cross-asset-dashboard
+
+
+Create and activate a virtual environment (Python ≥ 3.11):
+python -m venv .venv
+source .venv/bin/activate   # Mac/Linux
+.\.venv\Scripts\activate    # Windows
+
+
+Install dependencies:
+pip install -r requirements.txt
+
+If you don’t have requirements.txt, install directly:
+pip install pandas numpy matplotlib yfinance pandas_datareader streamlit
