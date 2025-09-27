@@ -35,11 +35,6 @@ import streamlit as st
 # Import Block
 # ============================================
 
-#import pandas as pd
-#port yfinance as yf
-#mport matplotlib.pyplot as plt
-##import pandas_datareader.data as dr
-#import streamlit as st
 
 # pandas: provides powerful tools for handling time series and tabular data.
 # yfinance: downloads asset price data directly from Yahoo Finance.
@@ -248,3 +243,9 @@ filtered_data.plot(ax=ax_selected)
 ax_selected.set_title("Cumulative Growth of Selected Series")
 st.pyplot(fig_selected)
 # Streamlit app: lets user select assets and date ranges, shows table and plots (all vs selected).
+
+
+# next steps : 
+# build up streamlit more (get something more user fiendly, + plus add some financial info (depending on the last infos for each ticker ))
+# clean the github repo 
+# coorect the instructions to run 
