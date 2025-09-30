@@ -202,47 +202,131 @@ for ticker, filename in tickers_and_files.items():
 # Streamlit Dashboard
 # ============================================
 
+# ============================================
+# Streamlit Dashboard
+# ============================================
+
+# ---- Page config & subtle CSS for a pro look ----
 st.set_page_config("Cross-Asset Regime Monitor", layout="wide")
+
+st.markdown("""
+<style>
+/* Badges for tickers */
+.ticker-badge {
+  display: inline-block;
+  padding: 6px 10px;
+  margin: 4px 6px 0 0;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.1);
+  background: rgba(240, 244, 255, 0.6);
+  font-size: 0.85rem;
+}
+.ticker-desc {
+  margin-top: 6px;
+  font-size: 0.92rem;
+  opacity: 0.9;
+}
+.section-card {
+  padding: 18px 18px 8px 18px;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  background: rgba(250, 250, 252, 0.7);
+}
+hr { border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 0.8rem 0 1rem 0; }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("Cross-Asset Regime Monitor")
 
+# ---- Build a richer metadata map for columns present in combined_cumulative ----
+TICKER_INFO = {
+    # Macros (FRED)
+    "CPIAUCNS": ("US CPI (Index)", "Headline CPI for All Urban Consumers — proxy for US inflation."),
+    "GDP": ("US GDP (SAAR)", "Real Gross Domestic Product — growth proxy."),
+    # Futures / Assets (Yahoo)
+    "ES=F": ("S&P 500 Futures", "Broad US equity benchmark futures (E-mini)."),
+    "ZN=F": ("10Y Treasury Note", "US 10-year Treasury futures — rates duration proxy."),
+    "GC=F": ("Gold", "Gold futures — safe-haven and inflation hedge."),
+    "CL=F": ("Crude Oil (WTI)", "WTI crude futures — energy & inflation driver."),
+    "ZW=F": ("Wheat", "CBOT wheat futures — agricultural commodity."),
+    "DX=F": ("US Dollar Index (Fut)", "ICE Dollar Index futures — broad USD strength.")
+}
+
+# ---- Combined frame already computed above ----
 combined_cumulative = pd.concat(
     [macro_cumulative_returns, all_assets_cumulative], axis=1
 ).dropna()
 
-available_assets = combined_cumulative.columns.tolist()
+available_assets = [c for c in combined_cumulative.columns if c in combined_cumulative.columns]
 min_date = combined_cumulative.index.min()
 max_date = combined_cumulative.index.max()
 
+# ---- Sidebar: professional controls ----
 with st.sidebar:
-    st.header("Dashboard Controls")
-    selected_assets = st.multiselect("Select assets:", options=available_assets,
-                                     default=available_assets)
-    date_range = st.date_input("Date range:",
-                               value=(min_date, max_date),
-                               min_value=min_date,
-                               max_value=max_date)
+    st.header("⚙️ Controls")
+    selected_assets = st.multiselect(
+        "Select series to display:",
+        options=available_assets,
+        default=available_assets[:5] if len(available_assets) > 5 else available_assets
+    )
+    date_range = st.date_input(
+        "Date range:",
+        value=(min_date, max_date),
+        min_value=min_date,
+        max_value=max_date
+    )
 
-if selected_assets:
-    filtered_data = combined_cumulative[selected_assets]
+# ---- Guardrails ----
+if not selected_assets:
+    st.warning("Please select at least one series in the sidebar to render the chart.")
+    st.stop()
+
+# Make sure date_range returns two endpoints
+if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
+    start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
 else:
-    filtered_data = combined_cumulative.copy()
+    start, end = min_date, max_date
 
-start, end = date_range
-filtered_data = filtered_data.loc[start:end]
+filtered_data = combined_cumulative.loc[start:end, selected_assets].dropna(how="all")
 
-st.subheader("Cumulative Returns Table")
-st.dataframe(filtered_data)
+# ---- Header card with badges and explanations ----
+st.markdown('<div class="section-card">', unsafe_allow_html=True)
+st.subheader("Selected Series")
 
-fig_all, ax_all = plt.subplots(figsize=(10, 5))
-combined_cumulative.plot(ax=ax_all)
-ax_all.set_title("Cumulative Growth of All Series")
-st.pyplot(fig_all)
+# Badges row
+badges_html = ""
+for tk in selected_assets:
+    label = TICKER_INFO.get(tk, (tk, ""))[0]
+    badges_html += f'<span class="ticker-badge">{label}</span>'
+st.markdown(badges_html, unsafe_allow_html=True)
 
-fig_selected, ax_selected = plt.subplots(figsize=(10, 5))
-filtered_data.plot(ax=ax_selected)
-ax_selected.set_title("Cumulative Growth of Selected Series")
-st.pyplot(fig_selected)
-# Streamlit app: lets user select assets and date ranges, shows table and plots (all vs selected).
+# Explanations list
+desc_lines = []
+for tk in selected_assets:
+    pretty, expl = TICKER_INFO.get(tk, (tk, ""))
+    if expl:
+        desc_lines.append(f"• **{pretty}** — {expl}")
+if desc_lines:
+    st.markdown('<div class="ticker-desc">' + "<br>".join(desc_lines) + "</div>", unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("<hr/>", unsafe_allow_html=True)
+
+# ---- Main chart (matplotlib) with a pro look ----
+fig, ax = plt.subplots(figsize=(12, 5))
+filtered_data.plot(ax=ax, linewidth=2)
+ax.set_title("Cumulative Growth (Normalized Base = 1.0)", loc="left")
+ax.set_xlabel("Date")
+ax.set_ylabel("Index Level")
+ax.grid(True, alpha=0.25)
+ax.legend(loc="upper left", ncol=2, frameon=False)
+fig.tight_layout()
+st.pyplot(fig)
+
+# ---- Optional: show a compact data preview table ----
+with st.expander("📄 Data preview (last 10 rows)"):
+    st.dataframe(filtered_data.tail(10))
+
 
 
 # next steps : 
