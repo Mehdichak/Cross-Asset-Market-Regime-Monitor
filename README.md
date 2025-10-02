@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # 🌍 Cross-Asset Market Regime Dashboard
 
 A work-in-progress project to monitor **cross-asset market regimes** by combining macroeconomic indicators and financial asset data.  
@@ -51,3 +52,7 @@ pip install -r requirements.txt
 If you don’t have requirements.txt, install directly:
 pip install pandas numpy matplotlib yfinance pandas_datareader streamlit
 
+=======
+# Cross-Asset-Market-Regime-Monitor
+MSc in Financial Markets and Investments Python Programming for Finance
+>>>>>>> Stashed changes
