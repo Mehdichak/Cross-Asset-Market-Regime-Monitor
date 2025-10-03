@@ -209,14 +209,14 @@ for ticker, filename in tickers_and_files.items():
 ## ============================================
 # Streamlit Dashboard
 # ============================================
-
 # ============================================
 # Streamlit Dashboard
 # ============================================
+
 import datetime as dt
 import matplotlib as mpl
-import pandas as pd
-import plotly.graph_objects as go  # <-- interactif pour le hover
+import plotly.express as px   # pour la heatmap interactive
+import plotly.graph_objects as go
 
 # ---- Page config ----
 st.set_page_config("Cross-Asset Regime Monitor", layout="wide")
@@ -229,11 +229,9 @@ rose_pine_colors = [
     "#c4a7e7",  # lavender
     "#31748f",  # pine
     "#e0def4",  # snow
-    "#524f67",  # muted grey
+    "#524f67"   # muted grey
 ]
 
-# (Conserve ces rcParams même si le tracé principal est en Plotly :
-# ils gardent la cohérence pour d’éventuels tracés Matplotlib.)
 mpl.rcParams.update({
     "axes.facecolor": "#191724",
     "figure.facecolor": "#191724",
@@ -259,95 +257,72 @@ if combined_cumulative.empty:
     st.stop()
 
 available_assets = combined_cumulative.columns.tolist()
+min_date = combined_cumulative.index.min()
+max_date = combined_cumulative.index.max()
 
-# Forcer Timestamp "naive" (sans timezone)
-data_min = pd.Timestamp(combined_cumulative.index.min()).tz_localize(None)
-data_max = pd.Timestamp(combined_cumulative.index.max()).tz_localize(None)
+# ---- Helpers presets dates ----
+def offset_from_anchor(anchor: dt.datetime, *, weeks=0, months=0, years=0) -> dt.datetime:
+    """Retourne anchor moins (weeks/months/years) en vraie datetime, sans DateOffset arithmétique ambiguë."""
+    d = anchor
+    if years:
+        d = d.replace(year=d.year - years)
+    if months:
+        # recule mois par mois pour rester simple/robuste
+        for _ in range(months):
+            y, m = d.year, d.month - 1
+            if m == 0:
+                y -= 1
+                m = 12
+            # clamp le jour (28) pour éviter fin de mois casse-gueule
+            day = min(d.day, 28)
+            d = d.replace(year=y, month=m, day=day)
+    if weeks:
+        d = d - dt.timedelta(weeks=weeks)
+    return d
 
 # ---- Sidebar controls ----
 with st.sidebar:
     st.header("⚙️ Controls")
-
     selected_assets = st.multiselect(
         "Select series:",
         options=available_assets,
-        default=available_assets[:3] if len(available_assets) >= 3 else available_assets,
-        key="assets_select",
+        default=available_assets[:3]
     )
 
-    range_mode = st.selectbox(
+    # Sélecteur de plage via presets (évite les soucis d'UI avec le calendar)
+    preset = st.selectbox(
         "Choose a date range",
-        [
-            "Custom (slider)",
-            "Past Week",
-            "Past Month",
-            "Past 3 Months",
-            "Past 6 Months",
-            "Past Year",
-            "Past 2 Years",
-            "All Data",
-        ],
+        ["None", "Past Week", "Past Month", "Past 3 Months", "Past 6 Months", "Past Year", "Past 2 Years"],
         index=0,
-        key="range_mode",
     )
 
-    # ✅ Soustraction séquentielle des offsets (fixe l'erreur DateOffset)
-    def offset_from_anchor(anchor, *, weeks=0, months=0, years=0) -> pd.Timestamp:
-        res = pd.Timestamp(anchor).tz_localize(None)
-        if weeks:
-            res = res - pd.DateOffset(weeks=weeks)
-        if months:
-            res = res - pd.DateOffset(months=months)
-        if years:
-            res = res - pd.DateOffset(years=years)
-        return pd.Timestamp(res).tz_localize(None)
+# Applique le preset choisi
+data_min = combined_cumulative.index.min().to_pydatetime()
+data_max = combined_cumulative.index.max().to_pydatetime()
 
-    if range_mode == "Custom (slider)":
-        start_ts, end_ts = st.slider(
-            "Date range (drag the handles)",
-            min_value=data_min.to_pydatetime(),
-            max_value=data_max.to_pydatetime(),
-            value=(data_min.to_pydatetime(), data_max.to_pydatetime()),
-            format="YYYY-MM-DD",
-            key="date_slider",
-        )
-        start_ts = pd.Timestamp(start_ts).tz_localize(None)
-        end_ts = pd.Timestamp(end_ts).tz_localize(None)
-    elif range_mode == "Past Week":
-        end_ts = data_max
-        start_ts = offset_from_anchor(data_max, weeks=1)
-    elif range_mode == "Past Month":
-        end_ts = data_max
-        start_ts = offset_from_anchor(data_max, months=1)
-    elif range_mode == "Past 3 Months":
-        end_ts = data_max
-        start_ts = offset_from_anchor(data_max, months=3)
-    elif range_mode == "Past 6 Months":
-        end_ts = data_max
-        start_ts = offset_from_anchor(data_max, months=6)
-    elif range_mode == "Past Year":
-        end_ts = data_max
-        start_ts = offset_from_anchor(data_max, years=1)
-    elif range_mode == "Past 2 Years":
-        end_ts = data_max
-        start_ts = offset_from_anchor(data_max, years=2)
-    else:  # "All Data"
-        start_ts, end_ts = data_min, data_max
+if preset == "Past Week":
+    start_ts = offset_from_anchor(data_max, weeks=1)
+elif preset == "Past Month":
+    start_ts = offset_from_anchor(data_max, months=1)
+elif preset == "Past 3 Months":
+    start_ts = offset_from_anchor(data_max, months=3)
+elif preset == "Past 6 Months":
+    start_ts = offset_from_anchor(data_max, months=6)
+elif preset == "Past Year":
+    start_ts = offset_from_anchor(data_max, years=1)
+elif preset == "Past 2 Years":
+    start_ts = offset_from_anchor(data_max, years=2)
+else:
+    start_ts = data_min
 
-# Garde-fous
-if start_ts > end_ts:
-    start_ts, end_ts = end_ts, start_ts
 start_ts = max(start_ts, data_min)
-end_ts   = min(end_ts, data_max)
+end_ts = data_max
 
 if not selected_assets:
     st.warning("Select at least one series.")
     st.stop()
 
-filtered_data = (
-    combined_cumulative.loc[start_ts:end_ts, selected_assets]
-    .dropna(how="all")
-)
+filtered_data = combined_cumulative.loc[start_ts:end_ts, selected_assets].dropna(how="all")
 
 # ---- Ticker descriptions ----
 ticker_descriptions = {
@@ -358,7 +333,7 @@ ticker_descriptions = {
     "GC=F": "Gold Futures (Safe haven asset)",
     "CL=F": "Crude Oil Futures (Energy prices)",
     "ZW=F": "Wheat Futures (Agricultural commodity)",
-    "DX=F": "US Dollar Index Futures (Currency strength)",
+    "DX=F": "US Dollar Index Futures (Currency strength)"
 }
 
 st.subheader("Selected Series & Descriptions")
@@ -366,68 +341,106 @@ for ticker in selected_assets:
     desc = ticker_descriptions.get(ticker, "No description available")
     st.markdown(f"**{ticker}** — {desc}")
 
-# ---- Interactive Plot (Plotly) with hover ----
-fig = go.Figure()
-
+# ---- Courbe principale (matplotlib) ----
+fig, ax = plt.subplots(figsize=(12, 6))
 for i, col in enumerate(filtered_data.columns):
-    fig.add_trace(
-        go.Scatter(
-            x=filtered_data.index,
-            y=filtered_data[col],
-            mode="lines",
-            name=col,
-            line=dict(width=2, color=rose_pine_colors[i % len(rose_pine_colors)]),
-            hovertemplate="<b>%{fullData.name}</b><br>Date: %{x|%Y-%m-%d}<br>Index: %{y:.3f}<extra></extra>",
-        )
+    ax.plot(
+        filtered_data.index,
+        filtered_data[col],
+        label=col,
+        linewidth=2,
+        color=rose_pine_colors[i % len(rose_pine_colors)]
     )
-
-fig.update_layout(
-    title=dict(text="Cumulative Growth of Selected Series", x=0.0, font=dict(color="#e0def4", size=18)),
-    hovermode="x unified",  # <- infobulle commune sous la souris
-    showlegend=True,
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0.0),
-    paper_bgcolor="#191724",
-    plot_bgcolor="#191724",
-    font=dict(color="#e0def4"),
-    margin=dict(t=60, r=10, b=40, l=60),
-)
-
-fig.update_xaxes(
-    title_text="Date",
-    gridcolor="#524f67",
-    zeroline=False,
-)
-fig.update_yaxes(
-    title_text="Index (base=1.0)",
-    gridcolor="#524f67",
-    zeroline=False,
-)
-
-st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": True})
+ax.grid(True, linestyle="--", alpha=0.3)
+ax.set_title("Cumulative Growth of Selected Series", fontsize=14, color="#e0def4")
+ax.set_xlabel("Date")
+ax.set_ylabel("Index (base=1.0)")
+ax.legend(frameon=False)
+st.pyplot(fig, clear_figure=True)
 
 # ---- Data preview ----
 with st.expander("🔎 Data preview"):
     st.dataframe(filtered_data.tail(10), use_container_width=True)
 
-# ---- Footer (intro en bas) ----
-footer_md = """
-<hr style="border-color:#2a273f; margin-top:2rem; margin-bottom:1rem;">
-<div style="color:#e0def4;">
-  <p><strong>finance_dashboard_pipeline.py</strong></p>
-  <p>This script synthesizes the key lessons from the Python for Finance lectures:</p>
-  <ul>
-    <li>Download financial and macroeconomic data (yfinance + FRED)</li>
-    <li>Save and reload data from CSV files</li>
-    <li>Handle missing values correctly (forward fill, no interpolation)</li>
-    <li>Compute arithmetic returns</li>
-    <li>Compute cumulative compounded returns (growth indexes)</li>
-    <li>Plot and save charts</li>
-    <li>Write modular code (each function does one thing only)</li>
-  </ul>
-</div>
-"""
-st.markdown(footer_md, unsafe_allow_html=True)
+# =========================
+# 📐 Correlation heatmap
+# =========================
+st.markdown("### 📐 Correlation heatmap")
 
+# Choix de la base de corrélation (niveaux vs rendements) + lookback simple
+c1, c2 = st.columns([2, 1])
+with c1:
+    corr_basis = st.radio(
+        "Base de calcul",
+        ["Daily returns", "Levels (cumulative index)"],
+        index=0,
+        horizontal=True
+    )
+with c2:
+    lookback = st.selectbox(
+        "Période",
+        ["Full Range", "Last 60 days", "Last 120 days", "Last 252 days"],
+        index=2
+    )
+
+# Sous-échantillonnage selon lookback
+df_corr = filtered_data.copy()
+if lookback != "Full Range" and not df_corr.empty:
+    n = int(lookback.split()[1])  # 60 / 120 / 252
+    df_corr = df_corr.tail(n)
+
+# Rendements si demandé
+if corr_basis == "Daily returns":
+    df_corr = df_corr.pct_change().dropna(how="all")
+
+# Calcul de la matrice de corrélation
+if df_corr.shape[1] < 2 or df_corr.dropna(how="all").empty:
+    st.info("Pas assez de données pour calculer une corrélation sur la période sélectionnée.")
+else:
+    corr_mat = df_corr.corr().round(2)
+
+    # Palette Rosé-Pine adaptée en diverging
+    fig_hm = px.imshow(
+        corr_mat,
+        text_auto=True,
+        color_continuous_scale=[ "#31748f", "#1f1d2e", "#eb6f92" ],  # bleu → sombre → rose
+        zmin=-1, zmax=1,
+        aspect="auto"
+    )
+    fig_hm.update_layout(
+        height=520,
+        margin=dict(l=60, r=40, t=40, b=60),
+        paper_bgcolor="#191724",
+        plot_bgcolor="#191724",
+        font_color="#e0def4",
+        coloraxis_colorbar=dict(title="ρ")
+    )
+    # Grille et axes
+    fig_hm.update_xaxes(showgrid=False)
+    fig_hm.update_yaxes(showgrid=False, autorange="reversed")
+
+    st.plotly_chart(fig_hm, use_container_width=True)
+
+# =========================
+# 📄 Footer (texte cours)
+# =========================
+st.markdown("---")
+st.markdown(
+    """
+    **finance_dashboard_pipeline.py**
+
+    This script synthesizes the key lessons from the Python for Finance lectures:
+
+    - Download financial and macroeconomic data (yfinance + FRED)  
+    - Save and reload data from CSV files  
+    - Handle missing values correctly (forward fill, no interpolation)  
+    - Compute arithmetic returns  
+    - Compute cumulative compounded returns (growth indexes)  
+    - Plot and save charts  
+    - Write modular code (each function does one thing only)
+    """,
+    unsafe_allow_html=True
+)
 
 
 # next steps : 
