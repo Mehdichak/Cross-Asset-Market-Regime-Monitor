@@ -19,4 +19,6 @@ rad.json
 #License-file
 *.flf
 #Test results file
-TestResults.xml
+TestResults.
+# Ignore le vieux dashboard
+dashboard_proj1.py
