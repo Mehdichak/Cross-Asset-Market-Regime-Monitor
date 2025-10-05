@@ -6,3 +6,4 @@ plotly
 yfinance
 fredapi
 pandas-datareader
+setuptools
