@@ -50,3 +50,12 @@ pip install -r requirements.txt
 
 If you don’t have requirements.txt, install directly:
 pip install pandas numpy matplotlib yfinance pandas_datareader streamlit
+
+##  Running
+afterinstallation:
+run program 
+typeinterminal streamlit run profcode-1.py
+withoutinsallation:  https://cross-asset-market-regime-monitor-xntupsnjdqhnfnjksmpfgv.streamlit.app/
+
+
+
