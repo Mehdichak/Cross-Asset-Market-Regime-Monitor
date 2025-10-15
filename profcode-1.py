@@ -3,7 +3,7 @@
 # to run streamlit : streamlit run streamlit_app.py
 # to stop press control c 
 # documentation for streamlit.  https://docs.streamlit.io/develop/api-reference/widgets/st.multiselect
-
+# direct link to the app : https://cross-asset-market-regime-monitor-xntupsnjdqhnfnjksmpfgv.streamlit.app/
 
 # ============================================
 # Import Block
@@ -363,7 +363,7 @@ with st.expander("🔎 Data preview"):
     st.dataframe(filtered_data.tail(10), use_container_width=True)
 
 # =========================
-# 📐 Correlation heatmap
+# Correlation heatmap
 # =========================
 st.markdown("### 📐 Correlation heatmap")
 
